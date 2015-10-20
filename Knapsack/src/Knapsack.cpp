@@ -56,6 +56,8 @@ int main() {
 			sack1.BaBApproch();
 			cout << "Dynamic\n\n";
 			sack1.PDynamic();
+			cout << "CORE\n\n";
+			sack1.PDynCore();
 		}
 		sack1.printSolution();
 	} else {
