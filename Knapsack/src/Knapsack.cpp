@@ -28,7 +28,7 @@ int main() {
 	 cin >> w;*/
 	//PbKnapsack sack1(7, 50);
 	using namespace lemon;
-	PbKnapsack sack1;
+PbKnapsack sack1;
 	cout << "Welcome to the Knapsack problem\n";
 	cout << "Do you want read data(Press 1) or generate now(Press 2)\n";
 	int dec;

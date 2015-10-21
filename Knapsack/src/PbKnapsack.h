@@ -21,6 +21,11 @@
 #include </usr/local/include/lemon/list_graph.h>
 #include </usr/local/include/lemon/preflow.h>
 #include </usr/local/include/lemon/bellman_ford.h>
+#include </usr/local/include/lemon/lp.h>
+#include </usr/local/include/lemon/lp_base.h>
+#include </usr/local/include/lemon/glpk.h>
+#include </usr/local/include/lemon/config.h>
+#include </usr/local/include/lemon/soplex.h>
 using namespace lemon;
 #ifndef PBKNAPSACK_H_
 #define PBKNAPSACK_H_
@@ -59,57 +64,67 @@ public:
 	state(const state& copy) :
 			a(copy.a), b(copy.b), wIn(copy.wIn), wOut(copy.wOut), pIn(copy.pIn), pOut(
 					copy.pOut), item(copy.item), relLin(copy.relLin) {
-		sol=copy.sol;
+		sol = copy.sol;
 	}
 	void AddObj(int n) {
 		sol[item] = 1;
 	}
-	const bool operator<(const state & s) {
-		if ((a != s.a) and (b != s.b)) {
+	const bool operator>(const state & s) {
+		if ((a != s.a) or (b != s.b)) {
 			return false;
 		}
-		return (((this->wOut + this->wIn) < (s.wOut + s.wIn)
-				and ((this->pOut + this->pIn) >= (s.pOut + s.pIn)))
-				or ((this->wOut + this->wIn) == (s.wOut + s.wIn)
-						and ((this->pOut + this->pIn) > (s.pOut + s.pIn))));
+		if ((wOut + wIn) < (s.wOut + s.wIn)
+				and (pOut + pIn) >= (s.pOut + s.pIn)) {
+			return true;
+		}
+		if ((wOut + wIn) == (s.wOut + s.wIn)
+				and (pOut + pIn) > (s.pOut + s.pIn)) {
+			return true;
+		}
+		return false;
 	}
 };
 class setState {
 public:
 	std::list<state> Core;
+	int BestINC;
+	state best;
+
 	void Dominance() {
 		std::list<state>::iterator it1;
-		/*for (it1 = Core.begin(); it1 != Core.end(); it1++) {
-			std::list<state>::iterator it2 = Core.begin();
-			for (it2 = it1; it2 != Core.end(); it2++) {
-				if ((*it2) < (*it1)) {
-					it2 = Core.erase(it2);
-				}
-			}
-		}*/
+		bool flag = false;
 		it1 = Core.begin();
 		while (it1 != Core.end()) {
+			flag = false;
 			std::list<state>::iterator it2 = it1;
 			while (it2 != Core.end()) {
-				if ((*it2) < (*it1)) {
+				if ((*it1) > (*it2)) {
 					it2 = Core.erase(it2);
 					continue;
 				}
-				if((*it1) < (*it2)){
+				if ((*it2) > (*it1)) {
 					it1 = Core.erase(it1);
+					flag = true;
 					break;
 				}
+
 				it2++;
+			}
+			if (flag) {
+				continue;
 			}
 			it1++;
 		}
-}
+	}
 	void CutBound(int INC) {
 		std::list<state>::iterator it = Core.begin();
-		for (; it != Core.end(); it++) {
+		//for (; it != Core.end(); it++) {
+		while (it != Core.end()) {
 			if ((*it).relLin <= INC) {
 				it = Core.erase(it);
+				continue;
 			}
+			it++;
 		}
 	}
 	//bool dominance(const state& s)
@@ -120,9 +135,10 @@ public:
 	int W;
 	double LB;
 	double dynSol;
+	int CoreSol;
 	setState listState;
 	std::vector<item> objects;
-	std::vector<int> /*weight, profit,*/x, dyn_x;
+	std::vector<int> /*weight, profit,*/x, dyn_x, core_x;
 	std::vector<float> xcont;
 	std::list<std::pair<int, double> > listRatio;
 	std::vector<int> vecSort; // size (n+1)
@@ -145,8 +161,9 @@ public:
 	int FindBreakItem(int j, double c);
 	int CapacityOutcore(int, int, bool);
 	int ProfitOutcore(int, int, bool);
-	int FindINC(std::list<state>&);
-	double U(state&, int, int);
+	int FindINC(setState&);
+	double U(state&);
+
 	//Print the results
 	void printSolution();
 	void printListPair();

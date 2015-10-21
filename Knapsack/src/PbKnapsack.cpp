@@ -6,19 +6,23 @@
  */
 
 #include "PbKnapsack.h"
-
+state BEST;
+int bestINC;
 void PbKnapsack::Initialisation() {
 	for (int i = 0; i < nbObj; i++) {
 		x.push_back(0);
 		xcont.push_back(0);
 		dyn_x.push_back(-1);
+		core_x.push_back(0);
 	}
 }
+
 PbKnapsack::PbKnapsack() {
 	LB = 0;
 	W = 0;
 	nbObj = 0;
 	dynSol = 0;
+	CoreSol = 0;
 }
 void PbKnapsack::GenerateData(std::string str, int n) {
 
@@ -148,20 +152,32 @@ void PbKnapsack::Ordering() {
 double PbKnapsack::Pl(int j, double c) {
 	double sum = 0;
 	double u = 0;
+	int i=0;
 	int critItem = -1;
-	for (int i = j; i <= nbObj; i++) {
-		sum += objects[vecSort[i]].w;
-		u += objects[vecSort[i]].p;
-		if (sum > c) {
-			critItem = vecSort[i];
-			u -= objects[critItem].p;
-			sum -= objects[critItem].w;
+	/*while(i<=j){
+		if(sum == c){critItem=vecSort[i+1];break;}
+		if(sum <= c){
+			sum += objects[vecSort[i+1]].w;
+			u += objects[vecSort[i+1]].p;
+		}else{
+			critItem=vecSort[i+1];
 			break;
 		}
+		i++;
+	}*/
+	for (int i = 0; i < nbObj; i++) {
+		if (sum > c) {
+			critItem = vecSort[i+1];
+			//u -= objects[critItem].p;
+			//sum -= objects[critItem].w;
+			break;
+		}
+		sum += objects[vecSort[i+1]].w;
+		u += objects[vecSort[i+1]].p;
 	}
 	u += //floor(
 			(double) objects[critItem].p
-					* ((c - sum) / (double) objects[critItem].w); //); //proverit okruglenie
+					* ((double) (c - sum) / (double) objects[critItem].w); //); //proverit okruglenie
 	return u;
 }
 int PbKnapsack::FindBreakItem(int j, double c) {
@@ -181,89 +197,71 @@ int PbKnapsack::FindBreakItem(int j, double c) {
 void PbKnapsack::BaBApproch() {
 	Ordering();
 	int counter = 0;
-	int i = 1;
+	int i = 0;
 	double c = W;
 	double z = 0;
 	LB = 0;
 	std::vector<int> x_cur(nbObj);
-	bool step2 = false, step5 = false, contin = true;
+	bool step5 = false, contin = true;
+
 	while (contin) {
-		//body of 2 step
 		step5 = false;
-		step2 = false;
-		double u = Pl(i, c);
-		std::cout << "Borne = " << u + z << "\n";
-		if (LB >= z + u) {
+		double u =z + Pl(i, c);
+		std::cout<<"UB="<<u<<"\n";
+		if (LB >= u) {
 			step5 = true;
 		}
 		//step 3
-		if (step5 == false) {
-			while (3) {
-				while (objects[vecSort[i]].w <= c) { //and i<nbObj) {
-					c -= objects[vecSort[i]].w;
-					z += objects[vecSort[i]].p;
-					x_cur[vecSort[i]] = 1;
-					i++;
-				}
-				if (i <= nbObj) {
-					x_cur[vecSort[i]] = 0;
-					i++;
-					//step2 = true;
-				}
-				/*if (i < nbObj) {
-				 step2 = true;
-				 break; //go to step 2
-				 }*/
-
-				if (i == nbObj) {
-					//break;//stay in step 3
-				}
-				if (i > nbObj) {
-					step2 = false;
-					break; //go to step 4
-				}
-			} // end step 3
-			if (step2 == false) {
-				//step 4
+		if (!step5) {
+			while (i < nbObj and objects[vecSort[i+1]].w <= c) { //and i<nbObj) {
+				c -= objects[vecSort[i+1]].w;
+				z += objects[vecSort[i+1]].p;
+				x_cur[vecSort[i+1]] = 1;
+				i++;
+			}
+			if (i < nbObj) {
+				x_cur[vecSort[i+1]] = 0;
+				i++;
+			} else {
 				if (z > LB) {
 					counter++;
 					LB = z;
 					std::cout << counter;
-					std::cout << "LB=" << LB << "\n";
+					std::cout << "LB=jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj" << LB << "\n";
 					for (int k = 0; k < nbObj; k++) {
 						x[k] = x_cur[k];
 						//std::cout << "x=" << x[k] << "\n";
 					}
 				}
-				i = nbObj;
-				if (x_cur[vecSort[nbObj]] == 1) { // nbObj-1
-					c += objects[vecSort[nbObj]].w;
-					z -= objects[vecSort[nbObj]].p;
-					x_cur[vecSort[nbObj]] = 0;
-					//i--;
-				}
+				step5 = true;
+				i--;
 			}
-			// end step 4
 		}
-		//step 5
-		if (step2 == false) //and step5==true)
-				{
-			int k = 0;
-			int index = -1;
-			while (k - 1 < i) { //(k-1 < i)
-				if (x_cur[k] == 1) {
-					index = k; //k+1
-				}
-				k++;
+
+		if (step5)
+		{
+			//i = nbObj;
+			if (i==nbObj-1 and x_cur[vecSort[i+1]] == 1) { // nbObj-1
+				c += objects[vecSort[i+1]].w;
+				z -= objects[vecSort[i+1]].p;
+				x_cur[vecSort[i+1]] = 0;
+				i--;
 			}
-			if (index != -1) {
-				c += objects[index].w;
-				z -= objects[index].p;
-				x_cur[index] = 0;
-				i = index + 2;
-				// go to step 2
+			int k = x_cur[vecSort[i+1]];
+			while (k==0) { //(k-1 < i)
+				i--;
+				if (i>=0) {
+					 k=x_cur[vecSort[i+1]]; //k+1
+				}else{
+					k=1;
+				}
+			}
+			if (i>0) {
+				c += objects[vecSort[i+1]].w;
+				z -= objects[vecSort[i+1]].p;
+				x_cur[vecSort[i+1]] = 0;
+				i++;
 			} else {
-				//break;
 				contin = false;	//exit(0); //finish
 			}
 		}
@@ -385,10 +383,16 @@ void PbKnapsack::printSolution() {
 		std::cout /*<< "Decision x="*/<< x[i]; //<< "\t";
 	}
 	std::cout << "\n";
-	std::cout << "Solution of Dynamic=" << dynSol << "\n";
+	std::cout << "Solution of Longest route=" << dynSol << "\n";
 	for (int i = 0; i < nbObj; i++) {
 
 		std::cout /*<< "Decision x=" */<< dyn_x[i]; // << "\t";
+	}
+	std::cout << "\n";
+	std::cout << "Solution of Core=" << CoreSol << "\n";
+	for (int i = 0; i < nbObj; i++) {
+
+		std::cout /*<< "Decision x=" */<< core_x[i]; // << "\t";
 	}
 }
 int PbKnapsack::CapacityOutcore(int a, int b, bool after_core) {
@@ -415,67 +419,76 @@ int PbKnapsack::ProfitOutcore(int a, int b, bool after_core) {
 	}
 	return sum;
 }
-int PbKnapsack::FindINC(std::list<state>& v) {
+int PbKnapsack::FindINC(setState& v) {
 	int INC = 0;
-	for (std::list<state>::iterator i = v.begin(); i != v.end(); i++) {
+	state best;
+	for (std::list<state>::iterator i = v.Core.begin(); i != v.Core.end();
+			i++) {
 		if ((*i).pIn + (*i).pOut > INC and (*i).wIn + (*i).wOut <= W) {
 			INC = (*i).pIn + (*i).pOut;
+			best = (*i);
 		}
+		listState.BestINC = INC;
+		listState.best = best;
 	}
 	return INC;
 }
-double PbKnapsack::U(state& s, int a, int b) {
+double PbKnapsack::U(state& s) {
 	double sum = 0;
 	int i = 1;
 	double u = 0;
-	bool NotOnlya=false;
-	while (i < a and W - s.wIn >= sum) {
+	if (i == s.a) {
+		i = s.b + 1;
+	}
+	if (i == nbObj + 1) {
+		return s.pIn + u;
+	}
+	while (W - s.wIn >= sum + objects[vecSort[i]].w) {
 		sum += objects[vecSort[i]].w;
 		u += objects[vecSort[i]].p;
 		i++;
+		if (i == s.a) {
+			i = s.b + 1;
+		}
+		if (i == nbObj + 1) {
+			return s.pIn + u;
+		}
 	}
-	int j = b + 1;
-	while (W - s.wIn >= sum and j < nbObj + 1) {
-		NotOnlya=true;
-		sum += objects[vecSort[j]].w;
-		u += objects[vecSort[j]].p;
-		j++;
-	}
-	if(!NotOnlya){
-		sum -= objects[vecSort[i-1]].w;
-		u -= objects[vecSort[i-1]].p;
-		return( s.pIn + u
-				+ objects[vecSort[i-1]].p
-						* ((double)((W - s.wIn - sum) / objects[vecSort[i-1]].w)));}
-	else{
-		sum -= objects[vecSort[j-1]].w;
-				u -= objects[vecSort[j-1]].p;
-				return( s.pIn + u
-						+ objects[vecSort[j-1]].p
-								* ((double)((W - s.wIn - sum) / objects[vecSort[j-1]].w)));
-	}
-
+	return (s.pIn + u
+			+ (double) objects[vecSort[i]].p
+					* ((double) ((W - s.wIn - sum)
+							/ (double) objects[vecSort[i]].w)));
 }
+
 void PbKnapsack::PDynCore() {
 //Initialisation
 	//ne zabut zapolnit vectSort
 	//Ordering();
-	std::vector<int> tmp(nbObj,0);
+	bestINC = 0;
+	std::vector<int> tmp(nbObj, 0);
 	int crit = FindBreakItem(1, W);
 	int a = crit, b = crit - 1;
 	state init(a, b, 0, CapacityOutcore(a, b, false), 0,
 			ProfitOutcore(a, b, false), crit, 0);
-	init.sol=tmp;
+	init.sol.assign(nbObj, 0);
+	for (int i = 1; i < crit; i++) {
+		init.sol[vecSort[i]] = 1;
+	}
 	listState.Core.push_back(init);
 	while ((a > 1) or (b < nbObj)) {
 		if (b < nbObj) {
+			if (b == 14) {
+
+			}
 			setState recurList;
 			for (std::list<state>::iterator i = listState.Core.begin();
 					i != listState.Core.end(); i++) {
 				state bFalse;
 				bFalse = *i;
 				bFalse.b = b + 1;
-				bFalse.relLin = U(bFalse, a, b + 1);
+				bFalse.sol[vecSort[b + 1]] = 0;
+				bFalse.item = b + 1;
+				bFalse.relLin = U(bFalse);
 				recurList.Core.push_back(bFalse);//faut-il faire bool pour "pas prendre"
 				if ((*i).wIn + objects[vecSort[b + 1]].w <= W) {
 					state bTrue;
@@ -485,53 +498,86 @@ void PbKnapsack::PDynCore() {
 					bTrue.pIn += objects[vecSort[b + 1]].p;
 					bTrue.item = b + 1;
 					bTrue.sol[vecSort[b + 1]] = 1;
-					bTrue.relLin = U(bTrue, a, b + 1);
+					bTrue.relLin = U(bTrue);
 					recurList.Core.push_back(bTrue);
 				}
 			}
 			recurList.Dominance();
-			int INC = FindINC(recurList.Core);
-			std::cout<<"INC b"<<INC;
+			int INC = FindINC(recurList);
+			//recurList.BestINC=INC;
+			//std::cout << "INC b" << INC << "\n";
+			if (CoreSol < listState.BestINC) {
+				CoreSol = listState.BestINC;
+				core_x = listState.best.sol;
+			}
 			recurList.CutBound(INC);
+
+			if (recurList.Core.empty()) {
+				std::cout << "EMPTY";
+				//core_x = listState.best.sol;
+				//CoreSol = listState.BestINC;
+				break;
+			}
 			listState = recurList;
+			recurList.Core.clear();
+			b++;
 		}
-		std::list<state>::iterator itB = listState.Core.begin();
-		b = (*itB).b;
-		if (a > vecSort[1]) {
+		//std::list<state>::iterator itB = listState.Core.begin();
+		//b = (*listState.Core.begin()).b;
+		//b++;
+		//std::cout << "b " << b;
+		if (a > 1) {
 			setState recurList;
 			for (std::list<state>::iterator i = listState.Core.begin();
 					i != listState.Core.end(); i++) {
 				state aFalse;
 				aFalse = *i;
 				aFalse.a = a - 1;
-				aFalse.wOut-=objects[vecSort[a - 1]].w;
-				aFalse.wIn+=objects[vecSort[a - 1]].w;
-				aFalse.pOut-=objects[vecSort[a - 1]].p;
-				aFalse.pIn+=objects[vecSort[a - 1]].p;
-				aFalse.relLin = U(aFalse, a - 1, b);
-				aFalse.item=a-1;
-				aFalse.sol[vecSort[a- 1]] = 1;
+				aFalse.wOut -= objects[vecSort[a - 1]].w;
+				aFalse.wIn += objects[vecSort[a - 1]].w;
+				aFalse.pOut -= objects[vecSort[a - 1]].p;
+				aFalse.pIn += objects[vecSort[a - 1]].p;
+				aFalse.relLin = U(aFalse);
+				aFalse.item = a - 1;
+				aFalse.sol[vecSort[a - 1]] = 1;
 				recurList.Core.push_back(aFalse);//faut-il faire bool pour "pas prendre"
-					state aTrue;
-					aTrue = (*i);
-					aTrue.a = a - 1;
-					aTrue.wOut -= objects[vecSort[a - 1]].w;
-					aTrue.pOut -= objects[vecSort[a - 1]].p;
-					aTrue.item = a - 1;
-					aTrue.sol[vecSort[a-1]] = 0;
-					aTrue.relLin = U(aTrue, a - 1, b);
-					recurList.Core.push_back(aTrue);
+				state aTrue;
+				aTrue = (*i);
+				aTrue.a = a - 1;
+				aTrue.wOut -= objects[vecSort[a - 1]].w;
+				aTrue.pOut -= objects[vecSort[a - 1]].p;
+				aTrue.item = a - 1;
+				aTrue.sol[vecSort[a - 1]] = 0;
+				aTrue.relLin = U(aTrue);
+				recurList.Core.push_back(aTrue);
 
 			}
 			recurList.Dominance();
-			int INC = FindINC(recurList.Core);
-			std::cout<<"INC a"<<INC;
+			int INC = FindINC(recurList);
+			//std::cout << "INC a" << INC << "\n";
+			if (CoreSol < listState.BestINC) {
+				CoreSol = listState.BestINC;
+				core_x = listState.best.sol;
+			}
 			recurList.CutBound(INC);
+			if (recurList.Core.empty()) {
+				std::cout << "EMPTY";
+
+				//core_x = listState.best.sol;
+				//CoreSol = listState.BestINC;
+				break;
+			}
+
 			listState = recurList;
+			recurList.Core.clear();
+			a--;
+
 		}
 
-		std::list<state>::iterator itA = listState.Core.begin();
-		a = (*itA).a;
+		//std::list<state>::iterator itA = listState.Core.begin();
+		//a = (*listState.Core.begin()).a;
+
+		//std::cout << "a " << a;
 
 	}
 }
