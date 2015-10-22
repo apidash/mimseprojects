@@ -147,7 +147,7 @@ public:
 	PbKnapsack();
 	bool FeasibilityTest();
 	void ReadData(std::string str);
-	void GenerateData(std::string str, int n);
+	void GenerateData(std::string str, int n,int type);
 	bool TrivialSolTest();
 	//Branch and Bound
 	void Ordering();

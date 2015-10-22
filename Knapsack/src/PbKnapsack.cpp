@@ -24,21 +24,48 @@ PbKnapsack::PbKnapsack() {
 	dynSol = 0;
 	CoreSol = 0;
 }
-void PbKnapsack::GenerateData(std::string str, int n) {
+void PbKnapsack::GenerateData(std::string str, int n,int type ) {
 
 	srand(time(NULL));
 	W = 100 + rand() % 40;
-	//nbObj = 10 + rand() % 40;
 	nbObj = n;
 	objects.reserve(nbObj);
 	Initialisation();
-	for (int i = 0; i < nbObj; i++) {
-		objects[i].p = (10 + rand() % 101);
-		objects[i].w = (0.01 * (20 + rand() % 31)) * W;
-		listRatio.push_back(
-				std::make_pair(i,
-						(double) objects[i].p / (double) objects[i].w));
+	if (type == 1) {
+		for (int i = 0; i < nbObj; i++) {
+			objects[i].p = (1 + rand()% 200);
+			objects[i].w = (1 + rand() %200);;
+			listRatio.push_back(
+					std::make_pair(i,
+							(double) objects[i].p / (double) objects[i].w));
+		}
 	}
+	if (type == 2) {
+		for (int i = 0; i < nbObj; i++) {
+			objects[i].w = (1 + rand() % 60);
+			objects[i].p = (0.01 * (20 + rand() % 60)) * objects[i].w;
+			listRatio.push_back(
+					std::make_pair(i,
+							(double) objects[i].p / (double) objects[i].w));
+		}
+	}
+	if (type == 3) {
+		for (int i = 0; i < nbObj; i++) {
+			objects[i].p = (10 + rand() % 101);
+			objects[i].w = objects[i].p;
+			listRatio.push_back(std::make_pair(i,1));
+		}
+	}
+	if (type == 4) {
+		for (int i = 0; i < nbObj; i++) {
+			objects[i].w = (5 + rand() % 60);
+			objects[i].p = (0.01 * (70 + rand() % 30)) * objects[i].w ;
+			listRatio.push_back(
+					std::make_pair(i,
+							(double) objects[i].p / (double) objects[i].w));
+		}
+	}
+
 
 	std::string name = "/home/apidash/workspace/Knapsack/" + str + ".dat";
 	std::ofstream ofs1(name.c_str());
@@ -154,7 +181,7 @@ double PbKnapsack::Pl(int j, double c) {
 	double u = 0;
 	int i=0;
 	int critItem = -1;
-	/*while(i<=j){
+	while(i<=j){
 		if(sum == c){critItem=vecSort[i+1];break;}
 		if(sum <= c){
 			sum += objects[vecSort[i+1]].w;
@@ -164,7 +191,7 @@ double PbKnapsack::Pl(int j, double c) {
 			break;
 		}
 		i++;
-	}*/
+	}/*
 	for (int i = 0; i < nbObj; i++) {
 		if (sum > c) {
 			critItem = vecSort[i+1];
@@ -174,7 +201,7 @@ double PbKnapsack::Pl(int j, double c) {
 		}
 		sum += objects[vecSort[i+1]].w;
 		u += objects[vecSort[i+1]].p;
-	}
+	}*/
 	u += //floor(
 			(double) objects[critItem].p
 					* ((double) (c - sum) / (double) objects[critItem].w); //); //proverit okruglenie
@@ -207,7 +234,7 @@ void PbKnapsack::BaBApproch() {
 	while (contin) {
 		step5 = false;
 		double u =z + Pl(i, c);
-		std::cout<<"UB="<<u<<"\n";
+	//	std::cout<<"UB="<<u<<"\n";
 		if (LB >= u) {
 			step5 = true;
 		}
@@ -377,24 +404,7 @@ void PbKnapsack::PDynamic() {
 
 	}
 }
-void PbKnapsack::printSolution() {
-	std::cout << "Solution of BandB=" << LB << "\n";
-	for (int i = 0; i < nbObj; i++) {
-		std::cout /*<< "Decision x="*/<< x[i]; //<< "\t";
-	}
-	std::cout << "\n";
-	std::cout << "Solution of Longest route=" << dynSol << "\n";
-	for (int i = 0; i < nbObj; i++) {
 
-		std::cout /*<< "Decision x=" */<< dyn_x[i]; // << "\t";
-	}
-	std::cout << "\n";
-	std::cout << "Solution of Core=" << CoreSol << "\n";
-	for (int i = 0; i < nbObj; i++) {
-
-		std::cout /*<< "Decision x=" */<< core_x[i]; // << "\t";
-	}
-}
 int PbKnapsack::CapacityOutcore(int a, int b, bool after_core) {
 	double sum = 0;
 	for (int i = 1; i < a; i++) {
@@ -590,6 +600,29 @@ void PbKnapsack::printListPair() {
 		++k;
 		std::cout << "Object: " << (*it).first + 1 << " with ratio "
 				<< (*it).second << std::endl << std::endl;
+	}
+}
+void PbKnapsack::printSolution() {
+	std::cout << "Solution of BandB=" << LB << "\n";
+	for (int i = 0; i < nbObj; i++) {
+		if (x[i] == 1) {
+			std::cout << " " << i + 1;
+		}
+	}
+	std::cout << "\n";
+	std::cout << "Solution of Longest route=" << dynSol << "\n";
+	for (int i = 0; i < nbObj; i++) {
+		if (dyn_x[i] == 1) {
+			std::cout << " " << i + 1;
+		}
+	}
+	std::cout << "\n";
+	std::cout << "Solution of Core=" << CoreSol << "\n";
+	for (int i = 0; i < nbObj; i++) {
+
+		if (core_x[i] == 1) {
+			std::cout << " " << i + 1;
+		}
 	}
 }
 PbKnapsack::~PbKnapsack() {
