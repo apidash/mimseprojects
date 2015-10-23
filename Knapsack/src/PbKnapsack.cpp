@@ -6,8 +6,6 @@
  */
 
 #include "PbKnapsack.h"
-state BEST;
-int bestINC;
 void PbKnapsack::Initialisation() {
 	for (int i = 0; i < nbObj; i++) {
 		x.push_back(0);
@@ -27,23 +25,30 @@ PbKnapsack::PbKnapsack() {
 void PbKnapsack::GenerateData(std::string str, int n,int type ) {
 
 	srand(time(NULL));
-	W = 100 + rand() % 40;
+	//W = 100 + rand() % 40;
+	int sum=0;
 	nbObj = n;
 	objects.reserve(nbObj);
 	Initialisation();
 	if (type == 1) {
 		for (int i = 0; i < nbObj; i++) {
-			objects[i].p = (1 + rand()% 200);
-			objects[i].w = (1 + rand() %200);;
+			objects[i].p = (1 + rand()% 70);
+			objects[i].w = (1 + rand() % 70);
+			sum+=objects[i].w;
 			listRatio.push_back(
 					std::make_pair(i,
 							(double) objects[i].p / (double) objects[i].w));
 		}
+
 	}
 	if (type == 2) {
 		for (int i = 0; i < nbObj; i++) {
-			objects[i].w = (1 + rand() % 60);
-			objects[i].p = (0.01 * (20 + rand() % 60)) * objects[i].w;
+			objects[i].w = (10 + rand() % 100);
+			objects[i].p = ( 2*(rand()% 10)+objects[i].w -10);
+			if(objects[i].p<=0){
+				objects[i].p=1;
+			}
+			sum+=objects[i].w;
 			listRatio.push_back(
 					std::make_pair(i,
 							(double) objects[i].p / (double) objects[i].w));
@@ -51,22 +56,24 @@ void PbKnapsack::GenerateData(std::string str, int n,int type ) {
 	}
 	if (type == 3) {
 		for (int i = 0; i < nbObj; i++) {
-			objects[i].p = (10 + rand() % 101);
+			objects[i].p = (1 + rand() % 101);
 			objects[i].w = objects[i].p;
+			sum+=objects[i].w;
 			listRatio.push_back(std::make_pair(i,1));
 		}
 	}
 	if (type == 4) {
 		for (int i = 0; i < nbObj; i++) {
-			objects[i].w = (5 + rand() % 60);
-			objects[i].p = (0.01 * (70 + rand() % 30)) * objects[i].w ;
+			objects[i].w = (1 + rand() % 100);
+			objects[i].p = objects[i].w+10;
+			sum+=objects[i].w;
 			listRatio.push_back(
 					std::make_pair(i,
 							(double) objects[i].p / (double) objects[i].w));
 		}
 	}
 
-
+    W=(int)(sum)/10;
 	std::string name = "/home/apidash/workspace/Knapsack/" + str + ".dat";
 	std::ofstream ofs1(name.c_str());
 	ofs1 << "nbObj= ";
@@ -177,34 +184,22 @@ void PbKnapsack::Ordering() {
 
 }
 double PbKnapsack::Pl(int j, double c) {
-	double sum = 0;
+	double sum = c;
 	double u = 0;
-	int i=0;
-	int critItem = -1;
-	while(i<=j){
-		if(sum == c){critItem=vecSort[i+1];break;}
-		if(sum <= c){
-			sum += objects[vecSort[i+1]].w;
-			u += objects[vecSort[i+1]].p;
+	int i=j;
+	//if(i==nbObj){
+	//	return 0;
+	//}
+	while(i<=nbObj){
+		if(objects[vecSort[i]].w <= sum){
+			sum -= objects[vecSort[i]].w;
+			u += objects[vecSort[i]].p;
 		}else{
-			critItem=vecSort[i+1];
+			u+=(double) objects[vecSort[i]].p* ((double) (sum) / (double) objects[vecSort[i]].w);
 			break;
 		}
 		i++;
-	}/*
-	for (int i = 0; i < nbObj; i++) {
-		if (sum > c) {
-			critItem = vecSort[i+1];
-			//u -= objects[critItem].p;
-			//sum -= objects[critItem].w;
-			break;
-		}
-		sum += objects[vecSort[i+1]].w;
-		u += objects[vecSort[i+1]].p;
-	}*/
-	u += //floor(
-			(double) objects[critItem].p
-					* ((double) (c - sum) / (double) objects[critItem].w); //); //proverit okruglenie
+	}
 	return u;
 }
 int PbKnapsack::FindBreakItem(int j, double c) {
@@ -252,6 +247,9 @@ void PbKnapsack::BaBApproch() {
 			} else {
 				if (z > LB) {
 					counter++;
+					if(counter==11){
+						std::cout<<"lalal";
+					}
 					LB = z;
 					std::cout << counter;
 					std::cout << "LB=jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj" << LB << "\n";
@@ -274,6 +272,9 @@ void PbKnapsack::BaBApproch() {
 				x_cur[vecSort[i+1]] = 0;
 				i--;
 			}
+			//if(i==nbObj){
+				//i--;
+			//}
 			int k = x_cur[vecSort[i+1]];
 			while (k==0) { //(k-1 < i)
 				i--;
@@ -283,7 +284,7 @@ void PbKnapsack::BaBApproch() {
 					k=1;
 				}
 			}
-			if (i>0) {
+			if (i>=0) {
 				c += objects[vecSort[i+1]].w;
 				z -= objects[vecSort[i+1]].p;
 				x_cur[vecSort[i+1]] = 0;
@@ -474,6 +475,7 @@ void PbKnapsack::PDynCore() {
 //Initialisation
 	//ne zabut zapolnit vectSort
 	//Ordering();
+	//Ordering();
 	bestINC = 0;
 	std::vector<int> tmp(nbObj, 0);
 	int crit = FindBreakItem(1, W);
@@ -610,7 +612,7 @@ void PbKnapsack::printSolution() {
 		}
 	}
 	std::cout << "\n";
-	std::cout << "Solution of Longest route=" << dynSol << "\n";
+	std::cout << "Solution of Longest Path=" << dynSol << "\n";
 	for (int i = 0; i < nbObj; i++) {
 		if (dyn_x[i] == 1) {
 			std::cout << " " << i + 1;
