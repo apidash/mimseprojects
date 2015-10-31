@@ -1,0 +1,319 @@
+\documentclass[12pt]{article}
+\usepackage{amssymb,amsthm, amsmath}    % amssymb package contains more mathematical symbols
+\usepackage{graphicx}   
+ \usepackage[latin1]{inputenc}       % graphicx package enables you to paste in graphics
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algorithm}
+%\usepackage[]{algorithm2e}
+%\usepackage{program} 
+
+
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-10mm}
+\setlength{\textwidth}{150mm}
+\setlength{\oddsidemargin}{0mm}
+
+
+\title{\textbf{Problème du sac à dos}}
+\author{Pidash Angelina \\ Enseignant: François Vanderbeck}
+\begin{document}
+\maketitle
+
+\newpage                  % optional page break
+\tableofcontents
+
+\newpage                     % optional page break
+\section{Introduction}
+Le but de ce projet est de développer et implémenter les algorithmes exactes du problème de sac à dos. Les critères principales sont d'avoir une solution optimale au temps raisonnable. Ces algorithmes sont implémentes en langage C++ et testés  sur des instances différentes. Ainsi que les analyses des résultats et conclusion sont présents à la fin de ce rapport.    
+\subsection{Présentation du modèle}
+Dans ce projet on s'intéresse à une classe de problèmes d'optimisation connus sous le nom général de problème du "sac à dos" ou "knapsack problem(KP)". Ce problème est défini de la manière suivante: un touriste possède un sac dont la capacité est limitée. Il se trouve face à un ensemble d'objets qu'il peut prendre. Chacun de ce projet possède est caractérisé par sa valeur et son poids. Le touriste souhaite optimiser la valeur totale des objets qu'il va prendre tout en ne dépassant pas le poids maximal supporté par son sac. Formellement, on a un sac à dos de poids maximal $W$ et $n$ objets. Chaque objet $i$ possède le poids $w_{i}>0$  et le profit $p_{i}>0$. Le problème consiste à choisir un sous-ensemble parmi $n$ objets en maximisant le profit total sans dépasser la capacité du sac. On peut le présenter sous la forme de programme linéaire en nombres entières,
+\begin{center}
+maximiser $\sum_{i=1}^{n} p_{i}x_{i}$  $(1)$
+\end{center}
+\begin{center}
+sachant $\sum_{i=1}^{n} w_{i}x_{i}\leq W$   $(2)$
+\end{center}
+\begin{center}
+$x_{i}\in \{0,1\}, i=1,...,n$     $(3)$
+\end{center}
+où $x_{i}$ représente une variable binaire qui égale 1 si on prend l'objet $i$ dans le sac et 0 sinon.\\
+Beaucoup de problèmes industriels peuvent être formulé comme problème du sac à dos: remplissage des cargos, cutting stock et contrôle de budget etc. Aussi des problèmes combinatoires peuvent en être réduit.
+KP est NP-dIfficile \cite{dure} mais peut être résolu en temps pseudo-polynomial avec des certains algorithmes(par ex.programmation dynamique).
+\newpage
+\subsection{Relaxation linéaire}
+Relaxation linéaire ou LP du problème on peut obtenir en relâchant la contrainte
+ $x_{i}\in \{0,1\}, i=1,...,n$ sur $ 0\leq x_{i}\leq 1, i=1,...,n$, donc on a le problème suivant:
+ \begin{center}
+maximiser $\sum_{i=1}^{n} p_{i}x_{i}$  $(4)$
+\end{center}
+\begin{center}
+sachant $\sum_{i=1}^{n} w_{i}x_{i}\leq W$ $(5)$
+\end{center}
+\begin{center}
+$ 0\leq x_{i}\leq 1, i=1,...,n$ $(6)$
+\end{center}
+La propriété la plus importante du problème en PLNE est que sa relaxation peut être résolu très vite en respectant certaines règles proposées par Dantzig\cite{Dantzig}. On trie les objets selon leurs profit-poids ratio, 
+ \begin{center}
+$\frac {p_{1}}{w_{1}} \geq \frac{p_{2}}{w_{2}}\geq ... \geq \frac{p_{n}}{w_{n}}$   $(7)$\\
+\end{center}
+et après on utilise l'algorithme glouton. A chaque itération on choisit l'objet avec le plus grand ratio et on le met dans le sac jusqu'à qu'on atteint l'objet qui entre pas, celui s'appelle \textit{objet critique c} ou\textit{ break item}.
+\\ La solution optimale  $\bar{x}$ est trouvée comme,
+\begin{center}
+$\bar{x_{i}}=1$  pour $i=1...b-1,$\\
+$\bar{x_{i}}=0$  pour $i=b+1...n,$\\
+$\bar{x_{c}}=\frac{\bar{w}}{w_{c}}$\\
+\end{center}
+où $\bar{w}=\sum_{i=1}^{b-1}W-w_{i}$.
+La valeur de LP est 
+\begin{center}
+$\bar{z}=\sum_{i=1}^{b-1}p_{i}+\bar{w}\frac{p_{b}}{w_{b}}$
+\end{center}
+Le triage préliminaire s'effectue en $O(n\log n)$ et la recherche de borne duale du problème $O(n)$. L'obtention facile et vite de cette borne fait possible de développer l'algorithme de Branch\& Bound de la manière efficace.
+\subsection{Classes des instances}
+Dans ce projet on considère les données générées aléatoirement. Des instances sont construits pour montrer la nature dIfférente des données.\\
+\textit{Instances pas corrélées} ou \textit{(eng.)Uncorrelated data instances}: dans ces instances il existe pas de corrélation entre le profit et le poids pour tout objet. Par exemple, les objets du petit poids ont le profit très important et à l'envers. Généralement il est assez simple de résoudre ces instances grâce à une grande variation entre des poids comme on peut voir sur la Figure 1. En plus en utilisant des bornes supérieures et la dominance on élimine aussi l'espace de recherche.
+\begin{center}
+\includegraphics[width=5cm]{UNdata.png}
+\medskip
+\\Figure 1: Instances pas corrélées.
+\end{center}   
+\textit{Instances faiblement corrélées} ou \textit{(eng.)Weakly}:généralement le profit est très corrélé du poids. La différence est en quelques pourcents. A cause de forte corrélation ça devient plus difficile d'éliminer des variables par bornes supérieure mais il reste aussi facile de résoudre grâce à une grande variation entre des poids et on obtient assez vite le sac-à-dos rempli. On peut observer ces instances sur Figure 2.
+\begin{center}
+\includegraphics[width=5cm]{Wdata.png}
+\medskip
+\\Figure 2: Instances faiblement corrélées.
+\end{center}
+\newpage
+\textit{Instances fortement corrélées} ou \textit{(eng.)Strongly} \textbf{et} \textit{Instances avec "$p_{i}=w_{i}$"}: en pratique ce sont des instances plus dure de résoudre. Premièrement, tous les objets autour l'objet critique ont le même poids ce que fais difficile de les combiner pour obtenir le sac complet. En plus on peut pas sûrement enlever tout petit objet à la condition de libérer l'espace pour l'objet plus gros. Ces instances sont bien présentées sur Figure 3.
+\begin{center}
+\includegraphics[width=5cm]{Sdata.png}
+\medskip
+\\Figure 3:Instances fortement corrélées.
+\end{center}
+On verra sur les analyses des résultats obtenus d'après chaque algorithme que pas seulement la corrélation entre le profit et le poids joue un rôle principal pour le temps d'exécution mais aussi $n$ et $W$. 
+\newpage
+\section{Branch \& Bound}
+\subsection{Définition}
+Un algorithme par séparation et évaluation, ou \textbf{Branch \& Bound}, est une méthode générique de résolution de problèmes d'optimisation combinatoire. Une méthode naïve pour résoudre ce problème, est d'énumérer toutes les solutions du problèmes, de calculer le coût pour chacune, puis de donner le maximum. Parfois il est possible d'éviter d'énumérer des solutions dont on sait, par l'analyse des propriétés du problème, que ce sont de mauvaises solutions, c'est-à-dire des solutions qui ne peuvent pas être le maximum. La méthode séparation et évaluation est une méthode générale pour cela.\\
+\subsection{Main algorithme}
+L?algorithme du Branch-and-Bound repose sur deux bornes (inférieure et supérieure)
+permettant de stopper l?exploration d?un sous-ensemble de solutions ne pouvant pas contenir la
+solution optimale. Concrètement, si pour un sous problème donné, la borne inférieure, obtenue par l'algorithme glouton, est plus
+grande que la borne supérieure, obtenue par résolution de LP, alors l?exploration du sous-ensemble correspondant est inutile.
+On suppose que les objets sont triés selon $(7)$. L'algorithme possède 2 étapes: \textit{forward move} and \textit{backward move}. La première étape consiste à former le vecteur de solution par des objets plus profitables. PEndant la deuxième étape on enlève le dernier objet ajouté de la solution courante. Quand la première étape est fini, on calcule une borne supérieure de la solution courante et la compare avec la meilleure solution déjà trouvée. Si la première étape mène vers la solution améliorante alors on effectue cette étape, sinon on démarre \textit{backward}. L'algorithme finit quand plus aucun \textit{backward} peut être effectué.
+Ici on présente le pseudocode de cet algorithme,
+\begin{algorithm}
+\caption{Branch and Bound}
+\begin{algorithmic}
+\item{\textit{1.Initialisation:}}
+\item $i = 0,c = W,z = 0,LB=0$;
+\item $xcur(n)$;
+\item{2.Calcul de la borne supérieure}
+\item $u =z + Pl(i, c)$;
+    \If {$LB\leq u$}
+        \State $step 5$
+    \EndIf
+\item {\textit{3.Effectuer 1 étape}}
+\While {$i \geq n$ and $w_{i}\geq c$}
+ \State $c=c-w_{i};$
+\State $z=z+p_{i};$
+\State $x_{i}=1;$
+\State $i=i+1;$
+ \EndWhile
+\If{$i\neq n$}
+    \State $x_{i}=0;$
+      \State $i=i+1;$
+    \Else
+   \item {\textit{4.Mise à jour la meilleure solution}}
+     \If{$z < LB$}
+        \State $LB=z;$
+        \State  for {$k=0$ to $n$ } 
+        \State {$x_{k}=xcur_{k};$} 
+       \EndIf
+      \State $i=i-1;$
+\EndIf
+\item { \textit{5.backward step}}
+\item find $j=max\{k<i:xcur_{k}=1;\}$
+  \If{\text{pas trouvé $j$}}
+    \State $FIN$
+    \Else
+   \State $c=c+w_{j};$
+   \State $z=z-p_{j};$
+   \State $x_{j}=0;$
+    \State $i=j+1;$
+   \State $\text{go to step 2}$
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+En utilisant cette borne inférieure, l'algorithme consiste à éviter une énumération explicite
+de toutes les solutions réalisables dans l'espace de recherche. 
+\newpage
+\section{Programmation dynamique}
+\subsection{Définition}
+D'autre approche aussi connu est une programmation dynamique. La programmation dynamique s'appuie sur un principe simple, appelé le principe d'optimalité de Bellman : toute solution optimale s'appuie elle-même sur des sous-problèmes résolus localement de façon optimale.\\
+Quand toutes les données sont entières et que la capacité $W$ du sac est un entier "pas trop grand", $W$ est nettement plus petit que $2n$, alors la PD peut donner la solution optimale en temps raisonnable. La  
+Ce temps n?est que pseudo polynomial : en effet la taille de $W$ est mesurée par son nombre de chiffres, en base 2 par exemple, autrement dit $ \log2n$ . Cependant cette méthode est intéressante car pour beaucoup de problèmes pratiques, il est possible d'arrondir les données (volumes et utilités) sur des entiers "pas trop grands".
+La programmation dynamique ne trie pas les éléments. Elle est fondée sur l'idée suivante.
+\begin{center}
+étapes $=$ les sous-ensembles d'objets $\{0,...,k\}$ \\ 
+états $=$ capacités utilisées à l'étape courante
+\end{center}
+KP peut être résolue à l'aide de l'immersion du problème initial dans la famille de sous-problèmes paramétrisés
+\begin{center}
+$h(k,w)=max\{\sum_{i=1}^{k} p_{i}x_{i}:\sum_{i=1}^{k} w_{i}x_{i}\leq w,x_{i}\in \{0,1\}, i=1,...,k \}$  $(8)$
+\end{center}
+et $h(0,0)=0.$\\
+$h(k,w)$ est le profit maximum qu'on peut avoir utilisé $k$ premières objets avec la capacité $w$.\\
+$(8)$ est lié avec une formule de récurrence,
+\begin{center}
+$h(k+1,w)=max\{h(k,w),h(k,w-w_{i})+p_{k+1}\}, k=0,..,n-1$  $(9)$
+\end{center}
+La complexité est nb(étapes)*nb(états)= $O(nW)$.\\
+Pour révéler le graphe orienté qui est à la base de programmation dynamique, on présente les sous-problèmes comme un graphe $G$ où les noeuds sont $(k,w)$.La formule de récurrence de Bellman$(9)$ a une présentation graphique sur Figure 4. L'arc de $(k,w)$ vers $(k+1,w)$ prend la valeur $0$ quand $x_{k+1}=0$ et de $(k,w)$ vers $(k+1,w-w_{k+1})$  la valeur $p_{k+1}$ pour $x_{k+1}=1$. 
+\begin{center}
+\includegraphics[width=5cm]{Graph.png}
+\medskip
+\\Figure 4:Graphe orienté.
+\end{center}
+\subsection{Plus long chemin dans un graphe avec LEMON}
+Normalement le problème de trouver le plus long chemin entre deux sommets dans un graphe est NP-dur, mais dans le cas d?un graphe acyclique sans cycle, ce problème est de nouveau de complexité linéaire. On utilise tout simplement la même récurrence que pour le plus court chemin  en remplacant le min par max.
+Cette idée a été réalisé à l'aide de bibliothèque de C++ pour la modélisation sur les réseaux "LEMON".
+Pour le problème courant l'algorithme de Bellman-Ford a été basé sur la programmation dynamique.
+D'abord on a créé $nW$ noeuds avec le source dans $(0,0)$  et puits dans $(n,W)$, et d'après PD état par état on ajoutait des arcs correspondants avec le poids ou $0$ ou $-p_{k+1}$. De telle façon on pouvait appliquer l'algorithme du plus court chemin avec le poids négatifs ce que nous donnait au final l'algorithme du plus long chemin. Selon un exemple quelconque notre graphe peut être dessiné comme sur la Figure 5.
+\begin{center}
+\includegraphics[width=5cm]{dessin.png}
+\medskip
+\\Figure 5:Exemple de problème de sac-à-dos.
+\end{center}
+La complexité de cet algorithme est $O(ne)$, où $n$ est le nombre de noeuds et $e$ est le nombre d'arcs. Ce que le fait aussi difficile à être résoudre pour les grandes instances.\\
+Au cours de tests sur les instances différentes ce modèle a pas passé l'épreuve pour le nombre d'objets 1000 et plus avec la capacité trop grande. La raison pour cela est la quantité de noeuds à créer $nW$ ce que casse aussi la programmation dynamique à cause de la complexité pseudo-polynomial avec l'espace de mémoire demandé aussi grande  $O(nW)$ (tableau de données de 2 dimensions).  
+La procédure de reconstituer la solution reste assez simple en pratique de l'implémenter comme on voit sur Figure 6 mais elle est aussi couteuse par rapport de temps d'exécution.  
+\begin{center}
+\includegraphics[width=5cm]{Resol.png}
+\medskip
+\\Figure 6:Reconstituer une solution.
+\end{center}
+\newpage
+\section{Programmation dynamique avec "Core Concept"}
+\subsection{Définition}
+Il est bien évident que certains types des instances dures peuvent être résolus efficacement tandis que pour les autres le pré-processing pose un véritable problème. C'est pour cette raison que l'idée de core est apparue. Elle consiste à définir un sous-ensemble de variables $[a,b]$ et fixer les variables au dehors du core.\\
+A l'aide de programmation dynamique on peut explorer la taille du core si besoin et fixer les variables à l'intérieure du core à ces valeurs qui rapportent le profit maximum. 
+\subsection{Main algorithme}
+Soit $h(a,b,w)$ le profit maximum qu'on peut obtenir avec les objets $i\in [a,b]$ une capacité $w$ , sachant que les objets $i<a$ dont fixés à $1$ et  $i>b$ à $0$:
+\begin{center}
+$h(a,b,w)=\sum_{i<a}p_{i}+P(a,b,w-\sum_{i<a}w_{i})$
+\end{center}
+\begin{center}
+avec $P(a,b,w)=max\{\sum_{i=a}^{b}p_{i}x_{i}:\sum_{i=a}^{b}w_{i}x_{i}\leq w, x_{i}\in \{0,1\}, i\in [a,b]\}$
+\end{center}
+On commence par trouver l'objet critique:
+\begin{center}
+$c=min\{j:\sum_{i=1}^{j}w_{i}>W\}$
+\end{center}
+Pour initialisation:
+\begin{center}
+$h(c,c-1,w)=\sum_{i<c}p_{i}, \forall w> \sum_{i<c}w_{i}$
+\end{center}
+Avec la formule de récurrence pour $\forall a,b$ et $w=0,..,2W$
+\[ h(a,b,w) = max
+  \begin{cases}
+    h(a+1,b,w)       & \quad \text{If } x_{a}=1\\
+    h(a+1,b,w+w_{a})-p_{a}  & \quad \text{If } x_{a}=0\\
+    h(a,b-1,w)       & \quad \text{If } x_{b}=0\\
+    h(a,b-1,w-w_{b})+p_{b}  & \quad \text{If } x_{b}=1\\
+  \end{cases}
+\]
+Core Conception avec List\cite{list}
+\begin{algorithm}
+\begin{algorithmic}
+\caption{Core Concept avec List}
+\item $List=(b,b-1,\sum_{i<a}w_{i},\sum_{i<a}p_{i})$;
+\While{$a>1 $ or $ b<n$}
+\If{$b<n$}
+\State $\forall(a,b,w,p) in List$
+\State $\bar{List}.push(a,b+1,w,p,x_{b+1}=0)$;
+\If{$\tilde{w}+w_{b+1}\leq W$}
+\State $\bar{List}.push(a,b+1,\tilde{w}+w_{b+1},\tilde{p}+p_{b+1},x_{b+1}=1)$;
+\EndIf
+\EndIf
+\item Reduce $\bar{List}$
+\item $List=\bar{List}$
+\If{$a>1$}
+\State $\forall(a,b,w,p) in List$
+\State $\bar{List}.push(a-1,b,w,p,x_{a-1}=1)$;
+\State $\bar{List}.push(a-1,b,\bar{w}-w_{a-1},\bar{p}+p_{a-1},x_{a-1}=0)$;
+\EndIf
+\item Reduce $\bar{List}$
+\item $List=\bar{List}$
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+La procédure "Reduce" s'effectue à deux étapes:
+\begin{enumerate}
+\item Dominance\\
+$(a,b,w^1,p^1)\succ (a,b,w^2,p^2)$
+\\si $(w^1<w^2$ et $p^1\geq p^2)$ ou $(w^1=w^2$ et $p^1 > p^2)$
+\\éliminer $(a,b,w^2,p^2)$
+\item Elimination par borne\\
+$U(a,b,w,p)=\bar{p}+max\{\sum_{i<a,i>b}p_{i}x_{i}:\sum_{i<a,i>b}w_{i}x_{i}\leq W-\bar{w},x_{i}\in [0,1]\};$
+\\éliminer $(a,b,w,p)$ si $ U(a,b,w,p)\geq INC$
+\\où $INC=max\{p:(a,b,w,p)\in List$ et $w\leq W\}$
+\end{enumerate}
+$*\bar{w}=\sum_{i<a} w_{i}$;\\
+$*\bar{p}=\sum_{i<a} p_{i}$;\\
+$*\tilde{w},\tilde{p}$ à l'intérieur du core.\\
+La complexité d'algorithme reste exponentielle $O(2^{b-a+1})$ mais avec l'élimination par bornes et la domination l'algorithme peut donner le résultat en temps raisonnable.
+\newpage
+\section{Tableaux des résultats et conclusion}
+Les algorithmes présents sont été implémenté en C++ sous Eclipse. En plus un logiciel d'IBM Cplex a été utilisé pour implémenter le modèle de base et comparer des résultats avec les algorithmes choisis. Nous testons le comportement des algorithmes sur des instances de tailles et types différentes. On a choisi 4 types des instances aléatoirement générées. Chaque type est testé avec la gamme $R=100$ pour les objets de tailles $n=50,100,500,1000,2000$. La capacité du sac-à-dos $W= \frac{1}{2} \bar{w_{n}}$.
+\begin{itemize}
+  \item \textit{pas corrélées}\\
+       $p_{i},w_{i}\in [1,R];$
+  \item \textit{faiblement corrélées}\\
+  $w_{i}\in [1,R];\\
+  p_{i}\in [w_{i}-10,w_{i}+10];$
+  \item \textit{fortement corrélées}\\
+    $w_{i}\in [1,R];\\
+  p_{i}=w_{i}+10;$
+  \item \textit{"$p_{i}=w_{i}$"}\\
+  $w_{i}\in [1,R];  
+  p_{i}=w_{i};$
+\end{itemize} 
+Dans les certains casiers on peut trouver $\infty$, ce que signifie que le temps d'exécution dépassait $30min$ ou "err" ce qui est le cas pour "Graphe Concept". Lorsqu'un programme s'exécute, le système d'exploitation lui alloue de la mémoire. Mais il arrive qu'au cours de son exécution, pour ses besoins de traitements, l'application ait besoin de mémoire supplémentaire. Et pour certaines tailles des instances(plus que $n=2000$) cette mémoire est pas suffisante.
+\begin{center}
+\includegraphics[width=12cm]{tab.png}
+\medskip
+\\Figure 7:Tableau des résultats.
+\end{center}
+Les premières tests sont été réalisés sur les instances pas corrélées. L'analyse des résultats confirme que pour ces instances tous les algorithmes trouvent la solution très vite en dépit de nombre d'objet. Il est dû à une grande variation entre les poids d'objets ce que facilite le remplissage du sac-à-dos. Néanmoins le temps d'exécution d'algorithme plus long chemin est assez important par rapport aux autres parce que l'algorithme prend beaucoup de temps pour la construction du graphe avec tous les arc nécessaires car il est basé sur PD, pendant cette construction il crée un réseaux de taille $n*W$ et pour chaque sommet il ajoute au moins un arc.
+Et après on applique  l'algorithme de Belleman-Ford avec la complexité $O(nb.sommets*nb.arcs)$. A cause de ça des erreurs de segmentation apparaissent à partir de 2000 objets. Les algorithmes de Branch\& Bound et Core Concept montrent à peu près équivalent temps sauf que grâce à dominance et élimination par borne, le deuxième est plus efficace.\\
+La tendance est la même pour les instances faiblement corrélées sauf que en moyenne les temps d'exécution s'augmentent sur $10-30 pourcents$. Si le temps est diminué c'est à cause de nature aléatoire des instances. Mais en général les instances avec la corrélation faible est plus dure à résoudre.\\
+Après on est effectué des tests sur les instances avec $p_{i}=w_{i}.$ Généralement ces instances restent difficile à résoudre parce que toute borne supérieure renvoie toujours le même valeur $W$. C'est pour cette raison qu'il est impossible de couper les branchements par des bornes supérieures tandis que la solution optimale est pas trouvée. Mais grâce à la nature aléatoire des instances il existe beaucoup de solutions optimales, il reste qu'à appliquer un algorithme de permutation pour les retrouver. En plus on peut remarquer que le temps est moins important pour ces instances parce qu'on l'ai diminué sur le trie des objets.\\
+Les instances les plus dures à résoudre et qui correspondent mieux à la vraie situation sont les instances avec la forte corrélation.
+Premièrement, tous les objets autour l'objet critique ont le même poids ce que fais difficile de les combiner pour obtenir le sac complet. En plus on peut pas sûrement enlever tout petit objet à la condition de libérer l'espace pour l'objet plus gros. Ces situations on peut bien observer dans le tableau des résultats où on est pas arrivé d'avoir le temps pour les grosses instances à partir de $n=500$.\\
+L'analyse des résultats donne telles conclusions:
+\begin{enumerate}
+\item les instances fortement corrélées sont plus dure à résoudre tandis que les instances pas corrélées généralement très facile;\\
+\item Une grande partie du temps d'exécution d'un algorithme est allouée au traitement et le triage des données c'est pour ça il parait plus intéressant de chercher les méthodes plus efficaces pour les traiter. Par example pour faire le triage des objets utiliser les algorithmes basés sur le principe de \textit{quicksort} avec la complexité $O(n)$;\\
+\item pour les instances dures il est inutile d'utiliser des algorithmes des branchements en ayant au pire cas la complexité exponentielle;\\
+\item l'algorithme basé sur le Core Concept reste une méthode assez efficace pour résoudre les instances pas corrélées, faiblement ou \textit{"$p_{i}=w_{i}$"}.\\
+\end{enumerate}
+Finalement, dans ce projet on a étudié les algorithmes très efficaces pour les instances pas corrélées, faiblement et \textit{"$p_{i}=w_{i}$"}.Pour les instances dure il existe pas pour l'instant d'algorithme qui était capable de trouver la solution optimale pour grande taille d'objets.
+\begin{thebibliography}{99}
+\bibitem{Dantzig}
+G.B. Dantzig,    
+{\em Discrete Variable Extremum Problems},
+Operations Research,266-277,1,(1957)
+\bibitem{dure}
+D.Pisinger,    
+{\em Algoritms for Knapsack Problem},
+Ph.D. thesis,75-90,5,(1995)
+\bibitem{list}
+F.Vanderbeck,    
+{\em Programmation entière},
+Cours,11-12,1,(2013-2014)
+\end{thebibliography}
+\end{document}
