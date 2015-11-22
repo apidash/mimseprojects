@@ -1,0 +1,5 @@
+Initialisation:
+
+pi à 0 est wi/w: on initialise à la taille des objets
+
+
